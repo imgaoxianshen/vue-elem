@@ -1,16 +1,16 @@
 <template>
     <div class="goods">
-        <div class="menu-wrapper">
+        <div class="menu-wrapper" ref="menuWapper">
             <ul>
-                <li v-bind:key="item.id" v-for="item in goods" class="menu-item">
+                <li v-bind:key="item.id" v-for="(item,index) in goods" class="menu-item" :class="{'current':currentIndex === index}" @click="selectMenu(index,$event)">
                     <span v-show="item.type>0" class="icon" :class="classMap[item.type]"></span>
                     <span class="text">{{item.name}}</span>
                 </li>
             </ul>
         </div>
-        <div class="foods-wrapper">
+        <div class="foods-wrapper" ref="foodsWapper">
             <ul>
-                <li v-for="item in goods" v-bind:key="item.id" class="food-list">
+                <li v-for="item in goods" v-bind:key="item.id" class="food-list food-list-hook">
                     <h1 class="title">{{item.name}}</h1>
                     <ul>
                         <li v-for="food in item.foods" v-bind:key="food.id" class="food-item">
@@ -22,7 +22,7 @@
                                 <p class="desc">{{food.description}}</p>
                                 <div class="ectra">
                                     <span class="count">月售{{food.sellCount}}</span>
-                                    <span class="count">好评率{{food.rating}}</span>
+                                    <span class="count">好评率{{food.rating}}%</span>
                                 </div>
                                  <div class="price">
                                     <span class="now">￥{{food.price}}</span>
@@ -34,20 +34,37 @@
                 </li>
             </ul>
         </div>
+        <shopcart :deliveryPrice="seller.deliveryPrice" :minPrice="seller.minPrice"></shopcart>
     </div>
 </template>
 
 <script type="text/ecmascript-6">
+    import BScroll from 'better-scroll';
+    import shopcart from 'components/shopcart/shopcart.vue';
     const ERR_OK = 0;
     export default{
         data () {
             return {
-                goods: []
+                goods: [],
+                listHeight: [],
+                scrollY: 0
             };
         },
         props: {
             seller: {
                 type: Object
+            }
+        },
+        computed: {
+            currentIndex () {
+                for (let i = 0; i < this.listHeight.length; i++) {
+                    let height1 = this.listHeight[i];
+                    let height2 = this.listHeight[i + 1];
+                    if (!height2 || (this.scrollY >= height1 && this.scrollY < height2)) {
+                        return i;
+                    }
+                }
+                return 0;
             }
         },
         created () {
@@ -57,9 +74,48 @@
                 response = response.body;
                 if (response.errno === ERR_OK) {
                     this.goods = response.data;
-                    console.log(this.goods);
+                    this.$nextTick(() => {
+                        this._initScroll();
+                        this._calculateHeight();
+                    });
                 }
             });
+        },
+        methods: {
+            _initScroll () {
+                this.menuScroll = new BScroll(this.$refs.menuWapper, {
+                    click: true
+                });
+                this.foodsScroll = new BScroll(this.$refs.foodsWapper, {
+                    probeType: 3
+                });
+
+                this.foodsScroll.on('scroll', (pos) => {
+                    this.scrollY = Math.abs(Math.round(pos.y));
+                });
+            },
+            _calculateHeight () {
+                let foodList = this.$refs.foodsWapper.getElementsByClassName("food-list-hook");
+                let height = 0;
+                this.listHeight.push(height);
+                for (let i = 0; i < foodList.length; i++) {
+                    let item = foodList[i];
+                    height += item.clientHeight;
+                    this.listHeight.push(height);
+                }
+            },
+            selectMenu (index, event) {
+                if (!event._constructed) {
+                    return null;
+                }
+
+                let foodList = this.$refs.foodsWapper.getElementsByClassName("food-list-hook");
+                let el = foodList[index];
+                this.foodsScroll.scrollToElement(el, 300);
+            }
+        },
+        components: {
+            shopcart
         }
     };
 </script>
@@ -93,6 +149,14 @@
         line-height: 14px;
         padding: 0 12px;
         border-bottom: 1px solid rgba(7,17,27,.1);
+    }
+
+    .current{
+        position: relative;
+        margin-top: 1px;
+        z-index: 10;
+        background-color:white;
+        font-weight: 700;
     }
 
     .menu-item .icon{
@@ -137,6 +201,10 @@
         margin-bottom: 0;
     }
 
+    .food-item:last-child{
+        padding: 0;
+    }
+
     .food-icon{
         flex:0 0 57px;
         margin-right: 10px;
@@ -162,6 +230,7 @@
     }
 
     .desc{
+        line-height: 12px;
         margin-bottom: 8px;
     }
 
@@ -169,8 +238,9 @@
         line-height: 10px;
     }
 
-    .extra .count{
+    .ectra .count{
         margin-right: 12px;
+        color:rgb(147,153,159);
     }
 
     .price{
