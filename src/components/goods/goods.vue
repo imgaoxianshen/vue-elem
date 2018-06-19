@@ -28,19 +28,23 @@
                                     <span class="now">￥{{food.price}}</span>
                                     <span class="old" v-show="food.oldPrice">￥{{food.oldPrice}}</span>
                                 </div>
+                                <div class="cartcontrol-wrapper">
+                                    <cartcontrol :food="food"></cartcontrol>
+                                </div>
                             </div>
                         </li>
                     </ul>
                 </li>
             </ul>
         </div>
-        <shopcart :deliveryPrice="seller.deliveryPrice" :minPrice="seller.minPrice"></shopcart>
+        <shopcart ref="shopcart" :selectFoods="selectFoods" :deliveryPrice="seller.deliveryPrice" :minPrice="seller.minPrice"></shopcart>
     </div>
 </template>
 
 <script type="text/ecmascript-6">
     import BScroll from 'better-scroll';
     import shopcart from 'components/shopcart/shopcart.vue';
+    import cartcontrol from 'components/cartcontrol/cartcontrol.vue';
     const ERR_OK = 0;
     export default{
         data () {
@@ -65,6 +69,17 @@
                     }
                 }
                 return 0;
+            },
+            selectFoods () {
+                let foods = [];
+                this.goods.forEach(good => {
+                    good.foods.forEach(food => {
+                        if (food.count) {
+                            foods.push(food);
+                        }
+                    });
+                });
+                return foods;
             }
         },
         created () {
@@ -87,7 +102,8 @@
                     click: true
                 });
                 this.foodsScroll = new BScroll(this.$refs.foodsWapper, {
-                    probeType: 3
+                    probeType: 3,
+                    click: true
                 });
 
                 this.foodsScroll.on('scroll', (pos) => {
@@ -115,7 +131,8 @@
             }
         },
         components: {
-            shopcart
+            shopcart,
+            cartcontrol
         }
     };
 </script>
@@ -243,7 +260,7 @@
         color:rgb(147,153,159);
     }
 
-    .price{
+    .food-content .price{
         font-weight: 700;
         line-height: 24px;
     }
@@ -257,5 +274,11 @@
     .price .old{
         text-decoration: line-through;
         color:rgb(147,153,159);
+    }
+
+    .cartcontrol-wrapper{
+        position: absolute;
+        right: 0;
+        bottom: 12px;
     }
 </style>
