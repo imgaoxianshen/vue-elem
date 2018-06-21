@@ -161,7 +161,6 @@
                 }
             },
             toggleList () {
-                console.log(111);
                 if (!this.totalCount) {
                     return;
                 }
@@ -176,7 +175,7 @@
                 if (this.totalPrice < this.minPrice) {
                     return;
                 }
-                window.alert('支付'+this.totalPrice+"元");
+                window.alert('支付' + this.totalPrice + "元");
             }
         },
         components: {
